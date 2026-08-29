@@ -7,7 +7,7 @@ export const LOOKBOOK_CAMPAIGNS: LookbookCampaign[] = [
     subtitle: 'EDITION 04 / CONTEMPORARY FORM & MIST',
     season: 'Autumn / Winter',
     location: 'Westfjords, Iceland — 65°45\'N 23°10\'W',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2400&q=90',
+    image: '/assets/look1.jpg',
     tagline: 'Sculptural silhouettes against vast elemental stillness.',
     hotspots: [
       {
@@ -34,7 +34,7 @@ export const LOOKBOOK_CAMPAIGNS: LookbookCampaign[] = [
     subtitle: 'FIELD STUDY & ATMOSPHERIC OUTERWEAR',
     season: 'Fall / Winter 2026',
     location: 'Landmannalaugar Geothermal Highlands',
-    image: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=2400&q=90',
+    image: '/assets/look2.jpg',
     tagline: 'Thermal shielding against geothermal vapor and highland frost.',
     hotspots: [
       {
