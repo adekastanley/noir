@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUI } from '../../context/UIContext';
 import { useCurrency } from '../../context/CurrencyContext';
-import { PRODUCTS } from '../../data/products';
+import { useProducts, useCategories } from '../../api/queries';
 import type { Product, ProductCategory } from '../../types';
 import { Search, X, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
 import { ImageWithFallback } from '../ui/ImagePlaceholder';
@@ -9,6 +9,9 @@ import { ImageWithFallback } from '../ui/ImagePlaceholder';
 export const SearchCommandModal: React.FC = () => {
   const { isSearchOpen, closeSearch, openQuickView, setActiveCategory } = useUI();
   const { formatPrice } = useCurrency();
+  const { data: productsData } = useProducts();
+  const { data: categoriesData } = useCategories();
+  const PRODUCTS = productsData || [];
 
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,14 +41,16 @@ export const SearchCommandModal: React.FC = () => {
     'Lug Boot',
   ];
 
-  const categoryTags: { label: string; value: ProductCategory }[] = [
-    { label: 'Outerwear', value: 'outerwear' },
-    { label: 'Knitwear', value: 'knitwear' },
-    { label: 'Tailoring', value: 'tailoring' },
-    { label: 'Bottoms', value: 'bottoms' },
-    { label: 'Objects', value: 'objects' },
-    { label: 'Footwear', value: 'footwear' },
-  ];
+  const categoryTags: { label: string; value: ProductCategory }[] = categoriesData
+    ? categoriesData.map((c: any) => ({ label: c.name, value: c.slug as ProductCategory }))
+    : [
+        { label: 'Outerwear', value: 'outerwear' as ProductCategory },
+        { label: 'Knitwear', value: 'knitwear' as ProductCategory },
+        { label: 'Tailoring', value: 'tailoring' as ProductCategory },
+        { label: 'Bottoms', value: 'bottoms' as ProductCategory },
+        { label: 'Objects', value: 'objects' as ProductCategory },
+        { label: 'Footwear', value: 'footwear' as ProductCategory },
+      ];
 
   const searchResults: Product[] = query.trim()
     ? PRODUCTS.filter((p) => {

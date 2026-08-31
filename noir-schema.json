@@ -1,0 +1,171 @@
+[
+  {
+    "title": "Global Settings",
+    "slug": "global-settings",
+    "kind": "single",
+    "access_level": "public",
+    "description": "Sitewide configuration, announcements, and footer links.",
+    "fields": [
+      {
+        "label": "Announcement Text",
+        "name": "announcement_text",
+        "type": "text",
+        "placeholder": "e.g., Free worldwide shipping on orders over €500"
+      },
+      {
+        "label": "Footer Copyright Text",
+        "name": "footer_copyright",
+        "type": "text"
+      }
+    ]
+  },
+  {
+    "title": "Editorial Hero",
+    "slug": "editorial-hero",
+    "kind": "single",
+    "access_level": "public",
+    "description": "Main landing page hero campaign.",
+    "fields": [
+      {
+        "label": "Hero Image",
+        "name": "hero_image",
+        "type": "image"
+      },
+      {
+        "label": "Hero Title",
+        "name": "hero_title",
+        "type": "text",
+        "placeholder": "e.g., ESCAPE THE NOISE."
+      },
+      {
+        "label": "Subtitle",
+        "name": "hero_subtitle",
+        "type": "text"
+      },
+      {
+        "label": "Button Link",
+        "name": "button_link",
+        "type": "text",
+        "placeholder": "/shop"
+      }
+    ]
+  },
+  {
+    "title": "Lookbook Campaigns",
+    "slug": "lookbooks",
+    "kind": "collection",
+    "access_level": "public",
+    "description": "Atmospheric lookbook campaigns and banners.",
+    "fields": [
+      {
+        "label": "Campaign Name",
+        "name": "campaign_name",
+        "type": "text"
+      },
+      {
+        "label": "Campaign Image",
+        "name": "campaign_image",
+        "type": "image"
+      },
+      {
+        "label": "Campaign Description",
+        "name": "campaign_description",
+        "type": "textarea"
+      }
+    ]
+  },
+  {
+    "title": "Atelier Principles",
+    "slug": "atelier-principles",
+    "kind": "single",
+    "access_level": "public",
+    "description": "The 3 core principles of the Atelier.",
+    "fields": [
+      {
+        "label": "Principles",
+        "name": "principles_list",
+        "type": "repeater",
+        "subFields": [
+          {
+            "label": "Title",
+            "name": "title",
+            "type": "text"
+          },
+          {
+            "label": "Description",
+            "name": "description",
+            "type": "textarea"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Material Studies",
+    "slug": "material-studies",
+    "kind": "collection",
+    "access_level": "public",
+    "description": "Fabric & Textile Materiality Studies.",
+    "fields": [
+      {
+        "label": "Study Title",
+        "name": "study_title",
+        "type": "text"
+      },
+      {
+        "label": "Main Image",
+        "name": "main_image",
+        "type": "image"
+      },
+      {
+        "label": "Weight",
+        "name": "weight",
+        "type": "text",
+        "placeholder": "e.g., 280 GSM"
+      },
+      {
+        "label": "Origin",
+        "name": "origin",
+        "type": "text",
+        "placeholder": "e.g., Okayama, Japan"
+      },
+      {
+        "label": "Technical Tag",
+        "name": "tag",
+        "type": "text",
+        "placeholder": "e.g., Technical Membrane"
+      },
+      {
+        "label": "Study Description",
+        "name": "study_description",
+        "type": "textarea"
+      }
+    ]
+  },
+  {
+    "title": "Client FAQs",
+    "slug": "client-faqs",
+    "kind": "single",
+    "access_level": "public",
+    "description": "Frequently asked questions for client services.",
+    "fields": [
+      {
+        "label": "FAQ Items",
+        "name": "faq_items",
+        "type": "repeater",
+        "subFields": [
+          {
+            "label": "Question",
+            "name": "question",
+            "type": "text"
+          },
+          {
+            "label": "Answer",
+            "name": "answer",
+            "type": "textarea"
+          }
+        ]
+      }
+    ]
+  }
+]

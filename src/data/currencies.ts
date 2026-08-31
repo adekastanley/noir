@@ -50,6 +50,13 @@ export const SUPPORTED_CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
     position: 'prefix',
     decimalPlaces: 2,
   },
+  NGN: {
+    code: 'NGN',
+    symbol: '₦',
+    rate: 1.0, // Assuming NGN is the base currency for this store now
+    position: 'prefix',
+    decimalPlaces: 0,
+  }
 };
 
-export const DEFAULT_CURRENCY: CurrencyCode = 'EUR';
+export const DEFAULT_CURRENCY: CurrencyCode = 'NGN';

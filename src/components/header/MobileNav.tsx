@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCategories } from '../../api/queries';
 import { useUI } from '../../context/UIContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { SUPPORTED_CURRENCIES } from '../../data/currencies';
@@ -13,15 +14,17 @@ export const MobileNav: React.FC = () => {
 
   if (!isMobileNavOpen) return null;
 
-  const categories: { label: string; value: ProductCategory }[] = [
-    { label: 'All Silhouettes', value: 'all' },
-    { label: 'Outerwear & Shells', value: 'outerwear' },
-    { label: 'Knitwear & Tops', value: 'knitwear' },
-    { label: 'Trousers & Bottoms', value: 'bottoms' },
-    { label: 'Architectural Tailoring', value: 'tailoring' },
-    { label: 'Objects & Leathercraft', value: 'objects' },
-    { label: 'Artisanal Footwear', value: 'footwear' },
-  ];
+  const { data: categoriesData } = useCategories();
+
+  const categories = React.useMemo(() => {
+    const defaultCat = { label: 'All Silhouettes', value: 'all' as ProductCategory };
+    if (!categoriesData) return [defaultCat];
+    const dynamicCats = categoriesData.map((c: any) => ({
+      label: c.name,
+      value: c.slug as ProductCategory,
+    }));
+    return [defaultCat, ...dynamicCats];
+  }, [categoriesData]);
 
   const handleCategorySelect = (cat: ProductCategory) => {
     setActiveCategory(cat);

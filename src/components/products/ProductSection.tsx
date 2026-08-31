@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from '../../context/UIContext';
-import { PRODUCTS } from '../../data/products';
+import { useProducts, useCategories } from '../../api/queries';
+import { Skeleton } from '../ui/skeleton';
 import type { ProductCategory, SortOption } from '../../types';
 import { ProductGrid } from './ProductGrid';
 import { ProductFilterDrawer } from './ProductFilterDrawer';
@@ -15,23 +16,33 @@ export const ProductSection: React.FC = () => {
     openFilterDrawer,
   } = useUI();
 
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts();
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCategories();
+  const PRODUCTS = productsData || [];
+
+  // Calculate maximum price dynamically from products
+  const maxProductPrice = useMemo(() => {
+    if (!productsData || productsData.length === 0) return 10000000;
+    return Math.max(...productsData.map((p) => p.price), 1000);
+  }, [productsData]);
+
   // Local filter states
   const [selectedSort, setSelectedSort] = useState<SortOption>('featured');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 600]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
 
-  // Categories list
-  const categories: { label: string; value: ProductCategory }[] = [
-    { label: 'All Silhouettes', value: 'all' },
-    { label: 'Outerwear', value: 'outerwear' },
-    { label: 'Tops & Knitwear', value: 'knitwear' },
-    { label: 'Tailoring', value: 'tailoring' },
-    { label: 'Bottoms', value: 'bottoms' },
-    { label: 'Objects', value: 'objects' },
-    { label: 'Footwear', value: 'footwear' },
-  ];
+  // Dynamic Categories list
+  const categories = useMemo(() => {
+    const defaultCat = { label: 'All Silhouettes', value: 'all' as ProductCategory };
+    if (!categoriesData) return [defaultCat];
+    const dynamicCats = categoriesData.map((c: any) => ({
+      label: c.name,
+      value: c.slug as ProductCategory,
+    }));
+    return [defaultCat, ...dynamicCats];
+  }, [categoriesData]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
@@ -55,7 +66,10 @@ export const ProductSection: React.FC = () => {
       result = result.filter((p) => p.inStock && p.stockCount > 0);
     }
 
-    result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    // Only filter price if the user actually adjusted the price range
+    if (priceRange[0] > 0 || priceRange[1] < maxProductPrice) {
+      result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    }
 
     switch (selectedSort) {
       case 'price-asc':
@@ -77,19 +91,19 @@ export const ProductSection: React.FC = () => {
     }
 
     return result;
-  }, [activeCategory, selectedSize, selectedColor, inStockOnly, priceRange, selectedSort]);
+  }, [PRODUCTS, activeCategory, selectedSize, selectedColor, inStockOnly, priceRange, maxProductPrice, selectedSort]);
 
   const activeFilterCount =
     (selectedSize ? 1 : 0) +
     (selectedColor ? 1 : 0) +
     (inStockOnly ? 1 : 0) +
-    (priceRange[0] > 0 || priceRange[1] < 600 ? 1 : 0);
+    (priceRange[0] > 0 || priceRange[1] < maxProductPrice ? 1 : 0);
 
   const clearAllFilters = () => {
     setSelectedSize(null);
     setSelectedColor(null);
     setInStockOnly(false);
-    setPriceRange([0, 600]);
+    setPriceRange([0, maxProductPrice]);
     setActiveCategory('all');
   };
 
@@ -103,19 +117,27 @@ export const ProductSection: React.FC = () => {
       <div className="border-b border-border bg-background flex flex-col md:flex-row items-stretch justify-between">
         {/* Horizontal Category Nav Scrollable */}
         <div className="flex items-center overflow-x-auto no-scrollbar border-b md:border-b-0 border-border">
-          {categories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setActiveCategory(cat.value)}
-              className={`px-4 sm:px-6 py-3.5 text-[11px] uppercase tracking-[0.2em] font-mono whitespace-nowrap transition-colors border-r border-border ${
-                activeCategory === cat.value
-                  ? 'bg-foreground text-background font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          {isLoadingCategories ? (
+            <div className="flex items-center px-4 py-3.5 space-x-6">
+              <Skeleton className="w-24 h-4 bg-muted-foreground/10" />
+              <Skeleton className="w-32 h-4 bg-muted-foreground/10" />
+              <Skeleton className="w-20 h-4 bg-muted-foreground/10" />
+            </div>
+          ) : (
+            categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setActiveCategory(cat.value)}
+                className={`px-4 sm:px-6 py-3.5 text-[11px] uppercase tracking-[0.2em] font-mono whitespace-nowrap transition-colors border-r border-border ${
+                  activeCategory === cat.value
+                    ? 'bg-foreground text-background font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))
+          )}
         </div>
 
         {/* Right Tools: Filter Drawer Trigger, Density, Sort */}
@@ -210,7 +232,21 @@ export const ProductSection: React.FC = () => {
       )}
 
       {/* Product Grid Render */}
-      <ProductGrid products={filteredProducts} />
+      {isLoadingProducts ? (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-border">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-background flex flex-col">
+              <Skeleton className="w-full aspect-[3/4] rounded-none" />
+              <div className="p-4 flex flex-col gap-2">
+                <Skeleton className="w-2/3 h-4 rounded-none" />
+                <Skeleton className="w-1/3 h-4 rounded-none" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ProductGrid products={filteredProducts} />
+      )}
 
       {/* View All Products Link (Direct Reference to inspiration image) */}
       <div className="w-full py-8 sm:py-10 border-b border-border bg-background flex items-center justify-center">
@@ -239,6 +275,7 @@ export const ProductSection: React.FC = () => {
         setInStockOnly={setInStockOnly}
         priceRange={priceRange}
         setPriceRange={setPriceRange}
+        maxPriceLimit={maxProductPrice}
         onReset={clearAllFilters}
         totalResults={filteredProducts.length}
       />

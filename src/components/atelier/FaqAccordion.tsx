@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { FAQ_ITEMS } from '../../data/atelier';
+import { useCMSContent } from '../../api/queries';
 import { Plus, Minus } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 export const FaqAccordion: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const { data: faqResponse, isLoading } = useCMSContent('client-faqs');
+  const faqData = faqResponse?.data || faqResponse?.fields || faqResponse || {};
+  const faqItems = Array.isArray(faqData.faq_items) ? faqData.faq_items : [];
 
   const toggleIndex = (idx: number) => {
     setOpenIndex(openIndex === idx ? null : idx);
@@ -39,31 +43,42 @@ export const FaqAccordion: React.FC = () => {
 
         {/* Right Column: Accordion Items */}
         <div className="lg:col-span-8 divide-y divide-border border-r border-border bg-card">
-          {FAQ_ITEMS.map((item, idx) => {
-            const isOpen = openIndex === idx;
-            return (
-              <div key={idx} className="transition-colors hover:bg-surface-subtle/50">
-                <button
-                  onClick={() => toggleIndex(idx)}
-                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 transition-colors"
-                  aria-expanded={isOpen}
-                >
-                  <span className="text-xs sm:text-sm font-medium tracking-tight text-foreground">
-                    {item.question}
-                  </span>
-                  <div className="p-1 border border-border text-foreground shrink-0">
-                    {isOpen ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                  </div>
-                </button>
-
-                {isOpen && (
-                  <div className="px-5 sm:px-6 pb-6 pt-1 text-xs text-muted-foreground font-light leading-relaxed animate-in fade-in duration-150">
-                    <p>{item.answer}</p>
-                  </div>
-                )}
+          {isLoading ? (
+            Array(4).fill(0).map((_, idx) => (
+              <div key={idx} className="w-full p-5 sm:p-6 flex items-center justify-between gap-4">
+                <Skeleton className="w-2/3 h-4" />
+                <Skeleton className="w-4 h-4" />
               </div>
-            );
-          })}
+            ))
+          ) : faqItems.length === 0 ? (
+            <div className="p-6 text-sm text-muted-foreground">No FAQs available at the moment.</div>
+          ) : (
+            faqItems.map((item: any, idx: number) => {
+              const isOpen = openIndex === idx;
+              return (
+                <div key={idx} className="transition-colors hover:bg-surface-subtle/50">
+                  <button
+                    onClick={() => toggleIndex(idx)}
+                    className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 transition-colors"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="text-xs sm:text-sm font-medium tracking-tight text-foreground">
+                      {item.question}
+                    </span>
+                    <div className="p-1 border border-border text-foreground shrink-0">
+                      {isOpen ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-5 sm:px-6 pb-6 pt-1 text-xs text-muted-foreground font-light leading-relaxed animate-in fade-in duration-150">
+                      <p>{item.answer}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </section>

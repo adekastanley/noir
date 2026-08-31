@@ -1,4 +1,4 @@
-import type { CheckoutPayload } from '../../types';
+import { apiClient } from '../../api/client';
 
 export interface PromoValidationResult {
   valid: boolean;
@@ -7,48 +7,59 @@ export interface PromoValidationResult {
   message: string;
 }
 
-const PROMO_CODES: Record<string, number> = {
-  NOIR10: 10,
-  ATELIERVIP: 15,
-  SILENT20: 20,
-  IDIBIA: 25,
-};
-
 export const cartApi = {
   /**
    * Validate a promotional voucher code
    */
   async validatePromoCode(code: string): Promise<PromoValidationResult> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const normalized = code.trim().toUpperCase();
-    
-    if (PROMO_CODES[normalized]) {
+    try {
+      const response = await apiClient.post('/coupons/validate', { code: code.trim().toUpperCase() });
+      const data = response.data;
+      if (data.success && data.data?.valid) {
+        return {
+          valid: true,
+          code: data.data.code,
+          discountPercentage: data.data.discount_percentage || 0,
+          message: data.data.message || `Discount applied.`,
+        };
+      }
       return {
-        valid: true,
-        code: normalized,
-        discountPercentage: PROMO_CODES[normalized],
-        message: `${PROMO_CODES[normalized]}% Atelier Privilege discount applied.`,
+        valid: false,
+        code: code.trim().toUpperCase(),
+        discountPercentage: 0,
+        message: data.data?.message || 'Invalid or expired promotional code.',
+      };
+    } catch {
+      return {
+        valid: false,
+        code: code.trim().toUpperCase(),
+        discountPercentage: 0,
+        message: 'Unable to validate code. Please try again.',
       };
     }
-
-    return {
-      valid: false,
-      code: normalized,
-      discountPercentage: 0,
-      message: 'Invalid or expired promotional code.',
-    };
   },
 
   /**
-   * Submit client order checkout payload
+   * Get available payment gateways
    */
-  async submitOrder(_payload: CheckoutPayload): Promise<{ success: boolean; orderId: string; estimatedDelivery: string }> {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const randomNum = Math.floor(100000 + Math.random() * 900000);
-    return {
-      success: true,
-      orderId: `NOIR-ORD-${randomNum}`,
-      estimatedDelivery: '3-4 Business Days via DHL Express Carbon Neutral',
-    };
+  async getGateways() {
+    const response = await apiClient.get('/payments/gateways');
+    return response.data;
+  },
+
+  /**
+   * Initialize payment
+   */
+  async initializePayment(payload: any) {
+    const response = await apiClient.post('/payments/initialize', payload);
+    return response.data;
+  },
+
+  /**
+   * Verify payment
+   */
+  async verifyPayment(order_id: string, reference: string) {
+    const response = await apiClient.post('/payments/verify', { order_id, reference });
+    return response.data;
   }
 };

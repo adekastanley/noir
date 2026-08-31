@@ -1,0 +1,23 @@
+{
+  "src/main.tsx": {
+    "file": "assets/main.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/utils/clipboard.ts",
+      "src/utils/clipboard.ts",
+      "src/utils/clipboard.ts",
+      "src/utils/clipboard.ts"
+    ],
+    "css": [
+      "assets/main.css"
+    ]
+  },
+  "src/utils/clipboard.ts": {
+    "file": "assets/clipboard-WyUuX9Qn.js",
+    "name": "clipboard",
+    "src": "src/utils/clipboard.ts",
+    "isDynamicEntry": true
+  }
+}

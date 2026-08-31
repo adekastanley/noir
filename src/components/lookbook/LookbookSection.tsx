@@ -1,22 +1,58 @@
 import React, { useState } from 'react';
-import { LOOKBOOK_CAMPAIGNS } from '../../data/lookbook';
+
 import { ShoppableHotspots } from './ShoppableHotspots';
 import { ImageWithFallback } from '../ui/ImagePlaceholder';
 import { Tag, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 
-export const LookbookSection: React.FC = () => {
-  const [currentCampaignIndex, setCurrentCampaignIndex] = useState(1); // Default to Volcanic Drift (matching bottom banner)
-  const { isLookbookHotspotsVisible, toggleLookbookHotspots } = useUI();
+import { useCMSContent } from '../../api/queries';
+import type { LookbookCampaign } from '../../types';
 
-  const campaign = LOOKBOOK_CAMPAIGNS[currentCampaignIndex] || LOOKBOOK_CAMPAIGNS[0];
+export const LookbookSection: React.FC = () => {
+  const [currentCampaignIndex, setCurrentCampaignIndex] = useState(0);
+  const { isLookbookHotspotsVisible, toggleLookbookHotspots } = useUI();
+  
+  const { data: lookbooksResponse } = useCMSContent('lookbooks');
+  const lookbooksData = lookbooksResponse?.data || lookbooksResponse;
+
+  const campaigns = React.useMemo<LookbookCampaign[]>(() => {
+    if (!lookbooksData || !Array.isArray(lookbooksData) || lookbooksData.length === 0) {
+      return [{
+        id: 'placeholder-campaign',
+        title: 'PENDING CAMPAIGN',
+        subtitle: 'NOIR ATELIER',
+        season: 'Current Season',
+        location: 'Studio Archive',
+        image: '',
+        tagline: 'Awaiting editorial upload from the Atelier.',
+        hotspots: []
+      }];
+    }
+    return lookbooksData.map((item: any, idx: number) => {
+      const rawImage = item.campaign_image;
+      const imageUrl = typeof rawImage === 'string' ? rawImage : (rawImage?.url || '');
+      
+      return {
+        id: item._id || `cms-campaign-${idx}`,
+        title: item.campaign_name || 'CAMPAIGN',
+        subtitle: 'NOIR ATELIER',
+        season: 'Current Season',
+        location: 'Studio Archive',
+        image: imageUrl,
+        tagline: item.campaign_description || '',
+        hotspots: [] // CMS doesn't currently support hotspots, fallback to empty
+      };
+    });
+  }, [lookbooksData]);
+
+  const campaign = campaigns[currentCampaignIndex] || campaigns[0];
 
   const nextCampaign = () => {
-    setCurrentCampaignIndex((prev) => (prev + 1) % LOOKBOOK_CAMPAIGNS.length);
+    setCurrentCampaignIndex((prev) => (prev + 1) % campaigns.length);
   };
 
   const prevCampaign = () => {
-    setCurrentCampaignIndex((prev) => (prev - 1 + LOOKBOOK_CAMPAIGNS.length) % LOOKBOOK_CAMPAIGNS.length);
+    setCurrentCampaignIndex((prev) => (prev - 1 + campaigns.length) % campaigns.length);
   };
 
   return (
@@ -62,7 +98,7 @@ export const LookbookSection: React.FC = () => {
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <span className="px-2 text-[10px] font-mono text-muted-foreground">
-              0{currentCampaignIndex + 1}/0{LOOKBOOK_CAMPAIGNS.length}
+              0{currentCampaignIndex + 1}/0{campaigns.length}
             </span>
             <button
               onClick={nextCampaign}

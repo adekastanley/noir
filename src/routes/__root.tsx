@@ -14,11 +14,23 @@ import { ProductQuickViewModal } from '../components/products/ProductQuickViewMo
 import { SizeGuideModal } from '../components/products/SizeGuideModal';
 import { CheckoutModal } from '../components/cart/CheckoutModal';
 import { ToastContainer } from '../components/ui/ToastContainer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 const RootLayout = () => {
   return (
-    <CurrencyProvider>
-      <CartProvider>
+    <QueryClientProvider client={queryClient}>
+      <CurrencyProvider>
+        <CartProvider>
         <WishlistProvider>
           <UIProvider>
             {/* Skip Link for Accessibility */}
@@ -56,6 +68,8 @@ const RootLayout = () => {
         </WishlistProvider>
       </CartProvider>
     </CurrencyProvider>
+    <ReactQueryDevtools initialIsOpen={false} position="bottom" />
+  </QueryClientProvider>
   );
 };
 

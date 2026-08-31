@@ -3,28 +3,25 @@ import { useUI } from '../../context/UIContext';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { cartApi } from '../../services/api/cartApi';
-import { X, CheckCircle2, CreditCard, Lock, ArrowLeft, ArrowRight, Truck } from 'lucide-react';
+import { X, CheckCircle2, Lock, ArrowRight, Truck } from 'lucide-react';
 
 export const CheckoutModal: React.FC = () => {
   const { isCheckoutOpen, closeCheckout, showToast } = useUI();
-  const { items, subtotal, total, isFreeShippingEligible, clearCart } = useCart();
-  const { currency, formatPrice } = useCurrency();
+  const { items, total, isFreeShippingEligible, clearCart } = useCart();
+  const { formatPrice } = useCurrency();
 
-  const [step, setStep] = useState<'shipping' | 'payment' | 'success'>('shipping');
+  const [step, setStep] = useState<'shipping' | 'success'>('shipping');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSummary, setOrderSummary] = useState<{ orderId: string; estimatedDelivery: string } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
-    fullName: 'Alexander Wright',
-    email: 'client@atelier-noir.com',
-    address: '14 Rue de Turenne',
-    city: 'Paris',
-    postalCode: '75004',
-    country: 'France',
-    cardNumber: '•••• •••• •••• 4242',
-    cardExpiry: '12/28',
-    cardCvc: '•••',
+    fullName: '',
+    email: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: '',
   });
 
   if (!isCheckoutOpen) return null;
@@ -37,35 +34,76 @@ export const CheckoutModal: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const res = await cartApi.submitOrder({
-        items,
-        currency,
-        subtotal,
-        shipping: shippingCost,
-        tax: finalTotal * 0.2, // 20% VAT included
-        total: finalTotal,
-        shippingAddress: {
-          fullName: formData.fullName,
+      // 1. Discover gateways
+      const gateways = await cartApi.getGateways();
+      const paystackGateway = gateways.data?.find((g: any) => g.id === 'paystack');
+      const paystackKey = paystackGateway?.public_key;
+
+      if (!paystackKey) {
+        throw new Error('Payment gateway not configured');
+      }
+
+      // 2. Initialize payment
+      const payment = await cartApi.initializePayment({
+        gateway: 'paystack',
+        billing: { 
+          first_name: formData.fullName.split(' ')[0] || formData.fullName, 
+          last_name: formData.fullName.split(' ').slice(1).join(' ') || '',
           email: formData.email,
-          addressLine: formData.address,
+          address_1: formData.address,
           city: formData.city,
-          postalCode: formData.postalCode,
-          country: formData.country,
+          postcode: formData.postalCode,
+          country: formData.country
         },
-        paymentMethod: 'card',
+        line_items: items.map(item => ({ product_id: parseInt(item.id) || 0, quantity: item.quantity })),
+        return_url: window.location.href
       });
 
-      setOrderSummary({
-        orderId: res.orderId,
-        estimatedDelivery: res.estimatedDelivery,
+      if (!payment.success || !payment.data) {
+        throw new Error('Failed to initialize payment');
+      }
+
+      // 3. Open Paystack Inline Popup
+      const paystack = (window as any).PaystackPop.setup({
+        key: paystackKey,
+        email: formData.email,
+        amount: Math.round(payment.data.total * 100),
+        ref: payment.data.reference,
+        currency: 'NGN',
+        callback: function(response: any) {
+          (async () => {
+            try {
+              // 4. Verify payment
+              const verification = await cartApi.verifyPayment(payment.data.order_id, payment.data.reference);
+              
+              if (verification.success && verification.data?.verified) {
+                setOrderSummary({
+                  orderId: payment.data.order_id,
+                  estimatedDelivery: verification.data?.estimated_delivery || '3-4 Business Days',
+                });
+                setStep('success');
+                clearCart();
+                showToast('Order confirmed. Archival dispatch underway.', 'success');
+              } else {
+                showToast('Payment verification failed. Please contact support.', 'warning');
+              }
+            } catch (err) {
+              showToast('Error verifying payment. Please contact support.', 'warning');
+            } finally {
+              setIsSubmitting(false);
+            }
+          })();
+        },
+        onClose: () => {
+          showToast('Payment cancelled.', 'warning');
+          setIsSubmitting(false);
+        }
       });
 
-      setStep('success');
-      clearCart();
-      showToast('Order confirmed. Archival dispatch underway.', 'success');
-    } catch {
-      showToast('Payment processing error. Please try again.', 'warning');
-    } finally {
+      paystack.openIframe();
+    } catch (err: any) {
+      console.error('Checkout error:', err);
+      showToast('Error initializing payment. Please try again.', 'warning');
       setIsSubmitting(false);
     }
   };
@@ -102,18 +140,14 @@ export const CheckoutModal: React.FC = () => {
           </span>
           <h2 id="checkout-modal-title" className="editorial-title text-base sm:text-lg font-semibold text-foreground">
             {step === 'shipping' && 'Client & Delivery Logistics'}
-            {step === 'payment' && 'Encrypted Payment Settlement'}
             {step === 'success' && 'Order Authenticated'}
           </h2>
         </div>
 
-        {/* Step: Shipping */}
+        {/* Step: Shipping & Payment Trigger */}
         {step === 'shipping' && (
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setStep('payment');
-            }}
+            onSubmit={handleSubmitOrder}
             className="space-y-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -209,84 +243,11 @@ export const CheckoutModal: React.FC = () => {
               </span>
             </div>
 
-            <div className="pt-4 border-t border-border flex items-center justify-between">
-              <span className="text-xs font-mono text-muted-foreground">
-                Order Total: <strong className="text-foreground">{formatPrice(finalTotal)}</strong>
-              </span>
-              <button
-                type="submit"
-                className="py-3 px-6 bg-foreground text-background text-xs font-mono uppercase tracking-widest font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-2"
-              >
-                <span>Continue to Payment</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Step: Payment */}
-        {step === 'payment' && (
-          <form onSubmit={handleSubmitOrder} className="space-y-4">
-            <div className="p-4 bg-surface-subtle border border-border space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <CreditCard className="w-4 h-4" /> Credit / Debit Card
-                </span>
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Lock className="w-3 h-3 text-emerald-500" /> End-to-end 256-Bit
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.cardNumber}
-                  onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2 text-xs font-mono outline-none focus:border-foreground"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                    Expiration
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.cardExpiry}
-                    onChange={(e) => setFormData({ ...formData, cardExpiry: e.target.value })}
-                    className="w-full bg-background border border-border px-3 py-2 text-xs font-mono outline-none focus:border-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
-                    Security CVC
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.cardCvc}
-                    onChange={(e) => setFormData({ ...formData, cardCvc: e.target.value })}
-                    className="w-full bg-background border border-border px-3 py-2 text-xs font-mono outline-none focus:border-foreground"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Summary */}
             <div className="p-3 bg-muted/20 border border-border text-xs font-mono space-y-1">
               <div className="flex justify-between text-muted-foreground">
                 <span>Total Items:</span>
                 <span className="text-foreground">{items.length} silhouettes</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Shipping to:</span>
-                <span className="text-foreground">{formData.city}, {formData.country}</span>
               </div>
               <div className="flex justify-between font-bold text-foreground pt-1 border-t border-border/50">
                 <span>Total Charge:</span>
@@ -295,23 +256,22 @@ export const CheckoutModal: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-border flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setStep('shipping')}
-                className="py-3 px-4 border border-border text-xs font-mono uppercase tracking-widest text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
+              <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                <Lock className="w-4 h-4" />
+                <span>Secure Checkout</span>
+              </div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || items.length === 0}
                 className="py-3 px-6 bg-foreground text-background text-xs font-mono uppercase tracking-widest font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span>Authenticating...</span>
                 ) : (
-                  <span>Authorize {formatPrice(finalTotal)}</span>
+                  <>
+                    <span>Pay {formatPrice(finalTotal)}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
                 )}
               </button>
             </div>

@@ -97,7 +97,7 @@ export interface WishlistItem {
   addedAt: string;
 }
 
-export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'JPY' | 'CAD' | 'AUD' | 'CHF';
+export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'JPY' | 'CAD' | 'AUD' | 'CHF' | 'NGN';
 
 export interface CurrencyConfig {
   code: CurrencyCode;

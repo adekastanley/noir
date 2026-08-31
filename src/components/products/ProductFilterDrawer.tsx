@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUI } from '../../context/UIContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useGlobalAttributes } from '../../api/queries';
 import type { SortOption } from '../../types';
 import { X, Check } from 'lucide-react';
 
@@ -15,6 +16,7 @@ interface ProductFilterDrawerProps {
   setInStockOnly: (val: boolean) => void;
   priceRange: [number, number];
   setPriceRange: (range: [number, number]) => void;
+  maxPriceLimit?: number;
   onReset: () => void;
   totalResults: number;
 }
@@ -30,6 +32,7 @@ export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
   setInStockOnly,
   priceRange,
   setPriceRange,
+  maxPriceLimit = 10000000,
   onReset,
   totalResults,
 }) => {
@@ -37,6 +40,8 @@ export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
   const { formatPrice } = useCurrency();
 
   if (!isFilterDrawerOpen) return null;
+
+  const { data: globalAttrs } = useGlobalAttributes();
 
   const sortOptions: { label: string; value: SortOption }[] = [
     { label: 'Featured Atelier Order', value: 'featured' },
@@ -46,15 +51,12 @@ export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
     { label: 'Alphabetical: A – Z', value: 'name-asc' },
   ];
 
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', '28', '30', '32', '34', 'EU 42', 'EU 43', 'One Size'];
-
-  const availableColors = [
+  const availableSizes = globalAttrs?.sizes?.length ? globalAttrs.sizes : ['XS', 'S', 'M', 'L', 'XL'];
+  const availableColors = globalAttrs?.colors?.length ? globalAttrs.colors : [
     { name: 'Obsidian Black', hex: '#121212' },
     { name: 'Alabaster Cream', hex: '#f0ece1' },
     { name: 'Oatmeal Sand', hex: '#d9d0c1' },
     { name: 'Basalt Charcoal', hex: '#2c2d30' },
-    { name: 'Dune Bone', hex: '#e3ded5' },
-    { name: 'Pure Carbon', hex: '#181818' },
   ];
 
   return (
@@ -186,21 +188,21 @@ export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
             <div className="pt-6 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="micro-label text-foreground font-semibold">MAXIMUM PRICE</span>
-                <span className="text-xs font-mono">{formatPrice(priceRange[1])}</span>
+                <span className="text-xs font-mono">{formatPrice(Math.min(priceRange[1], maxPriceLimit))}</span>
               </div>
               <input
                 type="range"
-                min={100}
-                max={600}
-                step={20}
-                value={priceRange[1]}
+                min={0}
+                max={maxPriceLimit}
+                step={Math.max(1, Math.floor(maxPriceLimit / 50))}
+                value={Math.min(priceRange[1], maxPriceLimit)}
                 onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                 className="w-full accent-foreground cursor-pointer"
                 aria-label="Filter maximum price"
               />
               <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
-                <span>{formatPrice(100)}</span>
-                <span>{formatPrice(600)}</span>
+                <span>{formatPrice(0)}</span>
+                <span>{formatPrice(maxPriceLimit)}</span>
               </div>
             </div>
 

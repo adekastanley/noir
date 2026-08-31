@@ -1,6 +1,4 @@
 import { PRODUCTS } from '../../data/products';
-import { COLLECTIONS } from '../../data/collections';
-import { LOOKBOOK_CAMPAIGNS } from '../../data/lookbook';
 import type { Product, ProductCategory, Collection, LookbookCampaign } from '../../types';
 
 export interface ProductQueryParams {
@@ -106,7 +104,7 @@ export const productsApi = {
    */
   async getCollections(): Promise<Collection[]> {
     await new Promise((resolve) => setTimeout(resolve, 50));
-    return COLLECTIONS;
+    return [];
   },
 
   /**
@@ -114,7 +112,7 @@ export const productsApi = {
    */
   async getLookbooks(): Promise<LookbookCampaign[]> {
     await new Promise((resolve) => setTimeout(resolve, 50));
-    return LOOKBOOK_CAMPAIGNS;
+    return [];
   },
 
   /**

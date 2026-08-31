@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { LookbookHotspot } from '../../types';
-import { PRODUCTS } from '../../data/products';
+import { useProducts } from '../../api/queries';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useCart } from '../../context/CartContext';
 import { useUI } from '../../context/UIContext';
@@ -14,11 +14,12 @@ export const ShoppableHotspots: React.FC<ShoppableHotspotsProps> = ({ hotspots }
   const { formatPrice } = useCurrency();
   const { addToCart } = useCart();
   const { openQuickView, showToast } = useUI();
+  const { data: productsData } = useProducts();
 
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
 
   const getProduct = (productId: string) => {
-    return PRODUCTS.find((p) => p.id === productId);
+    return productsData?.find((p) => p.id === productId);
   };
 
   return (

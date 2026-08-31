@@ -205,7 +205,7 @@ export const CartDrawer: React.FC = () => {
                     type="text"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Privilege Voucher (Try 'NOIR10')"
+                    placeholder="Privilege Voucher Code"
                     className="w-full bg-background border border-border text-foreground px-3 py-2 text-xs font-mono uppercase tracking-widest placeholder:text-muted-foreground placeholder:normal-case outline-none focus:border-foreground"
                   />
                 </div>
@@ -267,13 +267,11 @@ export const CartDrawer: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-muted-foreground uppercase tracking-widest pt-1">
+              <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted-foreground uppercase tracking-widest pt-1">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
                   256-Bit SSL Encrypted
                 </span>
-                <span>·</span>
-                <span>30-Day Atelier Returns</span>
               </div>
             </div>
           )}

@@ -42,7 +42,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         </div>
       ) : (
         <img
-          src={src}
+          src={src || undefined}
           alt={alt}
           loading="lazy"
           onLoad={() => setIsLoaded(true)}

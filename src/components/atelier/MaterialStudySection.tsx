@@ -1,11 +1,16 @@
 import React from 'react';
-import { MATERIAL_STUDIES } from '../../data/atelier';
+import { useCMSContent } from '../../api/queries';
 import { ImageWithFallback } from '../ui/ImagePlaceholder';
 import { ArrowUpRight } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
+import { Skeleton } from '../ui/skeleton';
 
 export const MaterialStudySection: React.FC = () => {
   const { setActiveCategory } = useUI();
+  
+  const { data: studiesResponse, isLoading } = useCMSContent('material-studies');
+  const studiesData = studiesResponse?.data || studiesResponse;
+  const studiesList = Array.isArray(studiesData) ? studiesData : [];
 
   const handleStudyClick = (tag: string) => {
     if (tag.includes('Membrane')) setActiveCategory('outerwear');
@@ -39,47 +44,71 @@ export const MaterialStudySection: React.FC = () => {
 
       {/* 3-Column Material Grid with 1px architectural lines */}
       <div className="grid grid-cols-1 md:grid-cols-3 border-l border-border divide-y md:divide-y-0 md:divide-x divide-border">
-        {MATERIAL_STUDIES.map((study, idx) => (
-          <div
-            key={study.id}
-            onClick={() => handleStudyClick(study.tag)}
-            className="group flex flex-col bg-card border-r border-border hover:bg-surface-subtle transition-colors cursor-pointer"
-          >
-            {/* Image Preview */}
-            <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-subtle border-b border-border">
-              <ImageWithFallback
-                src={study.image}
-                alt={study.name}
-                className="w-full h-full object-cover luxury-image-zoom filter brightness-[0.95]"
-              />
-              <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-xs text-foreground px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-border">
-                {study.tag}
+        {isLoading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col bg-card border-r border-border h-96">
+              <Skeleton className="w-full h-48 rounded-none" />
+              <div className="p-5 flex-1 space-y-4">
+                <Skeleton className="w-full h-6" />
+                <Skeleton className="w-3/4 h-4" />
+                <Skeleton className="w-full h-12" />
               </div>
             </div>
-
-            {/* Study Info */}
-            <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-1.5">
-                  <span>0{idx + 1} / {study.origin}</span>
-                  <span className="font-semibold text-foreground">{study.weight}</span>
-                </div>
-                <h3 className="text-sm font-medium tracking-tight text-foreground group-hover:opacity-75 transition-opacity flex items-center justify-between">
-                  <span>{study.name}</span>
-                  <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-muted-foreground" />
-                </h3>
-                <p className="text-xs text-muted-foreground font-light mt-2.5 leading-relaxed">
-                  {study.description}
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                <span>Inspect silhouettes in this weave</span>
-                <span className="text-foreground font-bold">→</span>
-              </div>
-            </div>
+          ))
+        ) : studiesList.length === 0 ? (
+          <div className="col-span-3 p-8 text-center text-muted-foreground text-sm">
+            Material studies data is currently unavailable.
           </div>
-        ))}
+        ) : (
+          studiesList.map((study: any, idx: number) => {
+            const rawImage = study.main_image;
+            const imageUrl = typeof rawImage === 'string' ? rawImage : (rawImage?.url || '');
+            
+            return (
+              <div
+                key={study._id || idx}
+                onClick={() => handleStudyClick(study.tag || '')}
+                className="group flex flex-col bg-card border-r border-border hover:bg-surface-subtle transition-colors cursor-pointer"
+              >
+                {/* Image Preview */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-subtle border-b border-border">
+                  <ImageWithFallback
+                    src={imageUrl}
+                    alt={study.study_title || 'Material Study'}
+                    className="w-full h-full object-cover luxury-image-zoom filter brightness-[0.95]"
+                  />
+                  {study.tag && (
+                    <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-xs text-foreground px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-border">
+                      {study.tag}
+                    </div>
+                  )}
+                </div>
+
+                {/* Study Info */}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-1.5">
+                      <span>0{idx + 1} / {study.origin || 'Unknown'}</span>
+                      <span className="font-semibold text-foreground">{study.weight || 'N/A'}</span>
+                    </div>
+                    <h3 className="text-sm font-medium tracking-tight text-foreground group-hover:opacity-75 transition-opacity flex items-center justify-between">
+                      <span>{study.study_title}</span>
+                      <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-muted-foreground" />
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-light mt-2.5 leading-relaxed">
+                      {study.study_description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    <span>Inspect silhouettes in this weave</span>
+                    <span className="text-foreground font-bold">→</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </section>
   );
