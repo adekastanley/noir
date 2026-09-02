@@ -70,7 +70,7 @@ export const CheckoutModal: React.FC = () => {
         amount: Math.round(payment.data.total * 100),
         ref: payment.data.reference,
         currency: 'NGN',
-        callback: function(response: any) {
+        callback: function(_response: any) {
           (async () => {
             try {
               // 4. Verify payment
